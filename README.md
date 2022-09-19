@@ -19,7 +19,7 @@ With this JavaScript library you can connect to a mosparo installation and verif
 Install this library by using npm:
 
 ```text
-npm install --save mosparo-js-api-client
+npm install @mosparo/api-client
 ```
 
 ## Usage
@@ -38,14 +38,10 @@ npm install --save mosparo-js-api-client
 ```
 3. Include the library in your project
 ```text
-@TODO
+const mosparo = require('@mosparo/api-client');
 ```
 4. After the form was submitted, verify the data before processing it
 ```js
-<?php
-
-const mosparo = require('mosparo-js-api-client');
-
 let client = new mosparo.Client(host, publicKey, privateKey, {});
 
 mosparoSubmitToken = formData._mosparo_submitToken;
@@ -57,7 +53,7 @@ client.validateSubmission(formData, mosparoSubmitToken, mosparoValidationToken).
     } else {
         // Show error message
     }
-})
+});
 ```
 
 ## API Documentation
@@ -77,14 +73,14 @@ let client = new Client(url, publicKey, privateKey, args);
 ```
 
 #### Verify form data
-To verify the form data, call ```validateSubmission``` with the form data in an array and the submit and validation token, which mosparo generated on the form initialization and the form data validation. The method will return a Promise object.
+To verify the form data, call `validateSubmission` with the form data in an array and the submit and validation token, which mosparo generated on the form initialization and the form data validation. The method will return a new Promise object that is resolved with the `VerificationResult` object.
 ```js
 /**
  * @param array formData Array with the form values. All not-processed fields by mosparo (hidden, checkbox, 
  *                       radio and so on) have to be removed from this array
  * @param string mosparoSubmitToken Submit token which mosparo returned on the form initialization
  * @param string mosparoValidationToken Validation token which mosparo returned after the form was validated
- * @return Promise Returns a Promise object
+ * @return Promise Returns a Promise object that is resolved with a VerificationResult object
  */
 client.validateSubmission(formData, mosparoSubmitToken, mosparoValidationToken).then((validationResult) => {
     if (verificationResult.isSubmittable()) {
