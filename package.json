@@ -1,6 +1,6 @@
 {
   "name": "@mosparo/api-client",
-  "version": "1.0.0",
+  "version": "1.0.0-beta1",
   "description": "JS API client to communicate with mosparo.",
   "main": "./src/index.js",
   "type": "commonjs",
@@ -14,7 +14,10 @@
   "keywords": [
     "mosparo",
     "js",
-    "api-client"
+    "javascript",
+    "api-client",
+    "spam",
+    "protection"
   ],
   "author": "mosparo (https://mosparo.io/)",
   "license": "MIT",
