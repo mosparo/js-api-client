@@ -47,7 +47,7 @@ let client = new mosparo.Client(host, publicKey, privateKey, {});
 mosparoSubmitToken = formData._mosparo_submitToken;
 mosparoValidationToken = formData._mosparo_validationToken;
 
-client.validateSubmission(formData, mosparoSubmitToken, mosparoValidationToken).then((verificationResult) => {
+client.verifySubmission(formData, mosparoSubmitToken, mosparoValidationToken).then((verificationResult) => {
     if (verificationResult.isSubmittable()) {
         // Send the email or process the data
     } else {
@@ -73,7 +73,7 @@ let client = new Client(url, publicKey, privateKey, args);
 ```
 
 #### Verify form data
-To verify the form data, call `validateSubmission` with the form data in an array and the submit and validation token, which mosparo generated on the form initialization and the form data validation. The method will return a new Promise object that is resolved with the `VerificationResult` object.
+To verify the form data, call `verifySubmission` with the form data in an array and the submit and validation token, which mosparo generated on the form initialization and the form data validation. The method will return a new Promise object that is resolved with the `VerificationResult` object.
 ```js
 /**
  * @param array formData Array with the form values. All not-processed fields by mosparo (hidden, checkbox, 
@@ -82,7 +82,7 @@ To verify the form data, call `validateSubmission` with the form data in an arra
  * @param string mosparoValidationToken Validation token which mosparo returned after the form was validated
  * @return Promise Returns a Promise object that is resolved with a VerificationResult object
  */
-client.validateSubmission(formData, mosparoSubmitToken, mosparoValidationToken).then((validationResult) => {
+client.verifySubmission(formData, mosparoSubmitToken, mosparoValidationToken).then((validationResult) => {
     if (verificationResult.isSubmittable()) {
         // Do your stuff, e.g. sending emails...
     }

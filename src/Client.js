@@ -6,6 +6,14 @@ const axios = require('axios');
 
 class Client
 {
+    /**
+     * Constructs the client
+     *
+     * @param {string} host
+     * @param {string} publicKey
+     * @param {string} privateKey
+     * @param {Object} clientOptions
+     */
     constructor(host, publicKey, privateKey, clientOptions)
     {
         this.host = host;
@@ -14,7 +22,15 @@ class Client
         this.clientOptions = clientOptions;
     }
 
-    validateSubmission(formData, submitToken, validationToken)
+    /**
+     * Verifies the submission
+     *
+     * @param {Object} formData
+     * @param {string} submitToken
+     * @param {string} validationToken
+     * @returns {Promise}
+     */
+    verifySubmission(formData, submitToken, validationToken)
     {
         let requestHelper = new RequestHelper(this.publicKey, this.privateKey);
 
@@ -89,6 +105,27 @@ class Client
         });
     }
 
+    /**
+     * Verifies the submission
+     *
+     * @param {Object} formData
+     * @param {string} submitToken
+     * @param {string} validationToken
+     * @returns {Promise}
+     *
+     * @deprecated 1.0.0 Use verifySubmission() instead since the process is to verify the data, not to validate
+     */
+    validateSubmission(formData, submitToken, validationToken)
+    {
+        return this.verifySubmission(formData, submitToken, validationToken)
+    }
+
+    /**
+     * Returns the statistic grouped by date for the given range in days
+     *
+     * @param {int} range
+     * @returns {Promise}
+     */
     getStatisticByDate(range)
     {
         let requestHelper = new RequestHelper(this.publicKey, this.privateKey);
@@ -130,6 +167,13 @@ class Client
         });
     }
 
+    /**
+     * Sends the request to the mosparo API
+     *
+     * @param {string} url
+     * @param {Object} options
+     * @returns {Promise}
+     */
     sendRequest(url, options)
     {
         options = {

@@ -15,23 +15,23 @@ afterEach(() => {
     mock.reset();
 })
 
-test('Validate submission without tokens', () => {
+test('Verify submission without tokens', () => {
     let client = new Client(host, publicKey, privateKey, {});
     let formData = {
         name: 'John Example'
     }
 
-    expect(() => { client.validateSubmission(formData) }).toThrow('Submit or validation token not available.');
+    expect(() => { client.verifySubmission(formData) }).toThrow('Submit or validation token not available.');
 });
 
-test('Validate submission without validation token', () => {
+test('Verify submission without validation token', () => {
     let client = new Client(host, publicKey, privateKey, {});
     let formData = {
         name: 'John Example',
         _mosparo_submitToken: 'submitToken',
     }
 
-    expect(() => { client.validateSubmission(formData) }).toThrow('Submit or validation token not available.');
+    expect(() => { client.verifySubmission(formData) }).toThrow('Submit or validation token not available.');
 });
 
 test('Get empty response from the API', async () => {
@@ -44,7 +44,7 @@ test('Get empty response from the API', async () => {
 
     mock.onPost(host + '/api/v1/verification/verify').reply(200, {});
 
-    await expect(client.validateSubmission(formData)).rejects.toEqual('Response from the API is invalid.');
+    await expect(client.verifySubmission(formData)).rejects.toEqual('Response from the API is invalid.');
 });
 
 test('Get empty response from the API with tokens as argument', async () => {
@@ -55,7 +55,7 @@ test('Get empty response from the API with tokens as argument', async () => {
 
     mock.onPost(host + '/api/v1/verification/verify').reply(200, {});
 
-    await expect(client.validateSubmission(formData, 'submitToken', 'validationToken'))
+    await expect(client.verifySubmission(formData, 'submitToken', 'validationToken'))
         .rejects.toEqual('Response from the API is invalid.');
 });
 
@@ -67,7 +67,7 @@ test('Handle connection error', async () => {
 
     mock.onPost(host + '/api/v1/verification/verify').networkError();
 
-    await expect(client.validateSubmission(formData, 'submitToken', 'validationToken'))
+    await expect(client.verifySubmission(formData, 'submitToken', 'validationToken'))
         .rejects.toEqual('Network Error');
 });
 
@@ -94,7 +94,7 @@ test('Submission is valid', async () => {
         issues: {}
     });
 
-    let validationResult = await client.validateSubmission(formData, submitToken, validationToken);
+    let validationResult = await client.verifySubmission(formData, submitToken, validationToken);
 
     let requestString = mock.history.post[0].data;
     let jsonData = JSON.parse(requestString);
@@ -130,7 +130,7 @@ test('Submission is invalid', async () => {
         errorMessage: 'Validation failed',
     });
 
-    let validationResult = await client.validateSubmission(formData, submitToken, validationToken);
+    let validationResult = await client.verifySubmission(formData, submitToken, validationToken);
 
     let requestString = mock.history.post[0].data;
     let jsonData = JSON.parse(requestString);

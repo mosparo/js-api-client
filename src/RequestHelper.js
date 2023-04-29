@@ -3,17 +3,35 @@ const hmacSHA256 = require('crypto-js/hmac-sha256');
 
 class RequestHelper
 {
+    /**
+     * Constructs the RequestHelper
+     *
+     * @param {string} publicKey
+     * @param {string} privateKey
+     */
     constructor (publicKey, privateKey)
     {
         this.publicKey = publicKey;
         this.privateKey = privateKey;
     }
 
+    /**
+     * Creates the HMAC hash for the given data
+     *
+     * @param {string} data
+     * @returns {string}
+     */
     createHmacHash(data)
     {
         return hmacSHA256(data, this.privateKey).toString();
     }
 
+    /**
+     * Prepares the form data
+     *
+     * @param {Object} formData
+     * @returns {Object}
+     */
     prepareFormData(formData)
     {
         let isArray = false;
@@ -48,6 +66,12 @@ class RequestHelper
         return formData;
     }
 
+    /**
+     * Cleanup the form data
+     *
+     * @param {Object} formData
+     * @returns {Object}
+     */
     cleanupFormData(formData)
     {
         if ('_mosparo_submitToken' in formData) {
@@ -89,11 +113,23 @@ class RequestHelper
         return formData;
     }
 
+    /**
+     * Creates the HMAC hash for the given form data
+     *
+     * @param {Object} formData
+     * @returns {string}
+     */
     createFormDataHmacHash(formData)
     {
         return this.createHmacHash(this.toJson(formData));
     }
 
+    /**
+     * Converts the given object into a JSON string
+     *
+     * @param {Object} inData
+     * @returns {string}
+     */
     toJson(inData)
     {
         let jsonString = JSON.stringify(inData);
@@ -101,6 +137,12 @@ class RequestHelper
         return jsonString.replace(/\[]/g, '{}');
     }
 
+    /**
+     * Sorts the given form data by key
+     *
+     * @param {Object} formData
+     * @returns {Object}
+     */
     sortFormData(formData)
     {
         return Object.keys(formData).sort().reduce(
