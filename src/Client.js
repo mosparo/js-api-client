@@ -123,16 +123,21 @@ class Client
     /**
      * Returns the statistic grouped by date for the given range in days
      *
-     * @param {int} range
+     * @param {int} range ime range in seconds (will be rounded up to a full day since mosparo v1.1)
+     * @param {string} startDate The start date from which the statistics are to be returned (format: YYYY-MM-DD, requires mosparo v1.1)
      * @returns {Promise}
      */
-    getStatisticByDate(range)
+    getStatisticByDate(range, startDate)
     {
         let requestHelper = new RequestHelper(this.publicKey, this.privateKey);
         let apiEndpoint = '/api/v1/statistic/by-date';
         let queryData = {};
         if (typeof range !== 'undefined' && range > 0) {
             queryData.range = range;
+        }
+
+        if (typeof startDate !== 'undefined' && startDate !== '') {
+            queryData.startDate = startDate;
         }
 
         let requestSignature = requestHelper.createHmacHash(apiEndpoint + requestHelper.toJson(queryData));

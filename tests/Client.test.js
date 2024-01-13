@@ -13,7 +13,7 @@ var mock = new MockAdapter(axios);
 
 afterEach(() => {
     mock.reset();
-})
+});
 
 test('Verify submission without tokens', () => {
     let client = new Client(host, publicKey, privateKey, {});
@@ -146,6 +146,15 @@ test('Submission is invalid', async () => {
     expect(validationResult.getIssues()[0].message).toEqual('Validation failed');
 });
 
+test('Use deprecated validateSubmission to verify the submission', () => {
+    let client = new Client(host, publicKey, privateKey, {});
+    let formData = {
+        name: 'John Example'
+    }
+
+    expect(() => { client.validateSubmission(formData) }).toThrow('Submit or validation token not available.');
+});
+
 test('Get statistic by date without range', async () => {
     let client = new Client(host, publicKey, privateKey, {});
     let numbersByDate = {
@@ -171,7 +180,7 @@ test('Get statistic by date without range', async () => {
     expect(statisticResult.getNumbersByDate()).toStrictEqual(numbersByDate);
 });
 
-test('Get statistic by date without range', async () => {
+test('Get statistic by date with range', async () => {
     let client = new Client(host, publicKey, privateKey, {});
     let numbersByDate = {
         '2021-04-29': {
@@ -190,6 +199,31 @@ test('Get statistic by date without range', async () => {
     });
 
     let statisticResult = await client.getStatisticByDate(3600);
+
+    expect(statisticResult.getNumberOfValidSubmissions()).toBe(2);
+    expect(statisticResult.getNumberOfSpamSubmissions()).toBe(5);
+    expect(statisticResult.getNumbersByDate()).toStrictEqual(numbersByDate);
+});
+
+test('Get statistic by date with start date', async () => {
+    let client = new Client(host, publicKey, privateKey, {});
+    let numbersByDate = {
+        '2021-04-29': {
+            numberOfValidSubmissions: 2,
+            numberOfSpamSubmissions: 5
+        }
+    };
+
+    mock.onGet(host + '/api/v1/statistic/by-date').reply(200, {
+        result: true,
+        data: {
+            numberOfValidSubmissions: 2,
+            numberOfSpamSubmissions: 5,
+            numbersByDate: numbersByDate
+        }
+    });
+
+    let statisticResult = await client.getStatisticByDate(0, '2024-01-01');
 
     expect(statisticResult.getNumberOfValidSubmissions()).toBe(2);
     expect(statisticResult.getNumberOfSpamSubmissions()).toBe(5);
