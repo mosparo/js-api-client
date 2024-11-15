@@ -1,5 +1,5 @@
 /**
- * This configuration will let allow us to generate TypeScript declaration (.d.ts) files without porting the entire project to TypeScript
+ * This configuration will allow us to generate TypeScript declaration (.d.ts) files without porting the entire project to TypeScript
  * Reference: https://www.typescriptlang.org/docs/handbook/declaration-files/dts-from-js.html
  **/
 {
