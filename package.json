@@ -1,38 +1,39 @@
 {
-  "name": "@mosparo/api-client",
-  "version": "1.1.0",
-  "description": "JS API client to communicate with mosparo.",
-  "main": "./src/index.js",
-  "type": "commonjs",
-  "scripts": {
-    "test": "jest"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mosparo/js-api-client.git"
-  },
-  "keywords": [
-    "mosparo",
-    "js",
-    "javascript",
-    "api-client",
-    "spam",
-    "protection"
-  ],
-  "author": "mosparo (https://mosparo.io/)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mosparo/js-api-client/issues"
-  },
-  "homepage": "https://mosparo.io",
-  "devDependencies": {
-    "@babel/preset-env": "^7.19.1",
-    "axios-mock-adapter": "^1.21.2",
-    "jest": "^29.0.3",
-    "typescript": "^5.6.3"
-  },
-  "dependencies": {
-    "axios": ">=1.6.0",
-    "crypto-js": ">=4.2.0"
-  }
+	"name": "@mosparo/api-client",
+	"version": "1.1.0",
+	"description": "JS API client to communicate with mosparo.",
+	"main": "./src/index.js",
+	"type": "commonjs",
+	"types": "./types/index.d.ts",
+	"scripts": {
+		"test": "jest"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mosparo/js-api-client.git"
+	},
+	"keywords": [
+		"mosparo",
+		"js",
+		"javascript",
+		"api-client",
+		"spam",
+		"protection"
+	],
+	"author": "mosparo (https://mosparo.io/)",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/mosparo/js-api-client/issues"
+	},
+	"homepage": "https://mosparo.io",
+	"devDependencies": {
+		"@babel/preset-env": "^7.19.1",
+		"axios-mock-adapter": "^1.21.2",
+		"jest": "^29.0.3",
+		"typescript": "^5.6.3"
+	},
+	"dependencies": {
+		"axios": ">=1.6.0",
+		"crypto-js": ">=4.2.0"
+	}
 }
