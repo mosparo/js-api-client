@@ -1,7 +1,7 @@
 {
 	"name": "@mosparo/api-client",
-	"version": "1.1.0",
-	"description": "JS API client to communicate with mosparo.",
+	"version": "1.2.0",
+	"description": "JavaScript and TypeScript API client to communicate with mosparo.",
 	"main": "./src/index.js",
 	"type": "commonjs",
 	"types": "./types/index.d.ts",
@@ -16,6 +16,8 @@
 		"mosparo",
 		"js",
 		"javascript",
+		"typescript",
+		"ts",
 		"api-client",
 		"spam",
 		"protection"
