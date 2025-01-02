@@ -1,0 +1,19 @@
+/**
+ * This configuration will allow us to generate TypeScript declaration (.d.ts) files without porting the entire project to TypeScript
+ * Reference: https://www.typescriptlang.org/docs/handbook/declaration-files/dts-from-js.html
+ **/
+{
+	"include": ["src/**/*"],
+	"compilerOptions": {
+		// Tells TypeScript to read JS files instead of ignoring them as source files
+		"allowJs": true,
+		// Generate d.ts files
+		"declaration": true,
+		// This compiler run should only output d.ts files
+		"emitDeclarationOnly": true,
+		// Types should go into this directory, otherwise the .d.ts files would be placed next to the javascript files
+		"outDir": "types",
+		// Go to the js file when using IDE functions like "Go to Definition" in VSCode"
+		"declarationMap": true
+	}
+}
