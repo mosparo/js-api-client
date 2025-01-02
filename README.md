@@ -15,7 +15,7 @@
 
 ## Description
 
-With this JavaScript library you can connect to a mosparo installation and verify the submitted data.
+With this JavaScript/TypeScript library you can connect to a mosparo installation and verify the submitted data.
 
 ## Installation
 
@@ -46,8 +46,10 @@ npm install @mosparo/api-client
 
 3. Include the library in your project
 
-```text
+```js
 const mosparo = require('@mosparo/api-client');
+// or
+import { Client } from '@mosparo/api-client';
 ```
 
 4. After the form was submitted, verify the data before processing it
