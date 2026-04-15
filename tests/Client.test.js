@@ -2,17 +2,19 @@ const Client = require('../src/Client').Client;
 const RequestHelper = require("../src/RequestHelper").RequestHelper;
 const FIELD_VALID = require("../src/VerificationResult").FIELD_VALID;
 
-const axios = require("axios");
-const MockAdapter = require("axios-mock-adapter");
-
 const host = 'https://test.local';
 const publicKey = 'publicKey';
 const privateKey = 'privateKey';
 
-var mock = new MockAdapter(axios);
+// Mock fetch globally
+global.fetch = jest.fn();
 
-afterEach(() => {
-    mock.reset();
+// Store request details for verification
+let lastFetchCall = null;
+
+beforeEach(() => {
+    fetch.mockClear();
+    lastFetchCall = null;
 });
 
 test('Verify submission without tokens', () => {
@@ -42,9 +44,12 @@ test('Get empty response from the API', async () => {
         _mosparo_validationToken: 'validationToken',
     };
 
-    mock.onPost(host + '/api/v1/verification/verify').reply(200, {});
+    fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({})
+    });
 
-    await expect(client.verifySubmission(formData)).rejects.toEqual('Response from the API is invalid.');
+    await expect(client.verifySubmission(formData)).rejects.toThrow('Response from the API is invalid.');
 });
 
 test('Get empty response from the API with tokens as argument', async () => {
@@ -53,10 +58,28 @@ test('Get empty response from the API with tokens as argument', async () => {
         name: 'John Example',
     };
 
-    mock.onPost(host + '/api/v1/verification/verify').reply(200, {});
+    fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({})
+    });
 
     await expect(client.verifySubmission(formData, 'submitToken', 'validationToken'))
-        .rejects.toEqual('Response from the API is invalid.');
+        .rejects.toThrow('Response from the API is invalid.');
+});
+
+test('Handle HTTP error (non-200 status)', async () => {
+    let client = new Client(host, publicKey, privateKey, {});
+    let formData = {
+        name: 'John Example',
+    };
+
+    fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500
+    });
+
+    await expect(client.verifySubmission(formData, 'submitToken', 'validationToken'))
+        .rejects.toThrow('HTTP error! status: 500');
 });
 
 test('Handle connection error', async () => {
@@ -65,10 +88,10 @@ test('Handle connection error', async () => {
         name: 'John Example',
     };
 
-    mock.onPost(host + '/api/v1/verification/verify').networkError();
+    fetch.mockRejectedValueOnce(new Error('Network Error'));
 
     await expect(client.verifySubmission(formData, 'submitToken', 'validationToken'))
-        .rejects.toEqual('Network Error');
+        .rejects.toThrow('Network Error');
 });
 
 test('Submission is valid', async () => {
@@ -87,17 +110,23 @@ test('Submission is valid', async () => {
     let validationSignature = requestHelper.createHmacHash(validationToken);
     let verificationSignature = requestHelper.createHmacHash(validationSignature + formSignature);
 
-    mock.onPost(host + '/api/v1/verification/verify').reply(200, {
-        valid: true,
-        verificationSignature: verificationSignature,
-        verifiedFields: { 'name': FIELD_VALID },
-        issues: {}
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({
+                valid: true,
+                verificationSignature: verificationSignature,
+                verifiedFields: { 'name': FIELD_VALID },
+                issues: {}
+            })
+        });
     });
 
     let validationResult = await client.verifySubmission(formData, submitToken, validationToken);
 
-    let requestString = mock.history.post[0].data;
-    let jsonData = JSON.parse(requestString);
+    // Verify the request was made correctly
+    let jsonData = JSON.parse(lastFetchCall.options.body);
 
     expect(jsonData.submitToken).toEqual(submitToken);
     expect(jsonData.validationSignature).toEqual(validationSignature);
@@ -125,15 +154,21 @@ test('Submission is invalid', async () => {
 
     let validationSignature = requestHelper.createHmacHash(validationToken);
 
-    mock.onPost(host + '/api/v1/verification/verify').reply(200, {
-        error: true,
-        errorMessage: 'Validation failed',
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({
+                error: true,
+                errorMessage: 'Validation failed',
+            })
+        });
     });
 
     let validationResult = await client.verifySubmission(formData, submitToken, validationToken);
 
-    let requestString = mock.history.post[0].data;
-    let jsonData = JSON.parse(requestString);
+    // Verify the request was made correctly
+    let jsonData = JSON.parse(lastFetchCall.options.body);
 
     expect(jsonData.submitToken).toEqual(submitToken);
     expect(jsonData.validationSignature).toEqual(validationSignature);
@@ -164,13 +199,16 @@ test('Get statistic by date without range', async () => {
         }
     };
 
-    mock.onGet(host + '/api/v1/statistic/by-date').reply(200, {
-        result: true,
-        data: {
-            numberOfValidSubmissions: 0,
-            numberOfSpamSubmissions: 10,
-            numbersByDate: numbersByDate
-        }
+    fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+            result: true,
+            data: {
+                numberOfValidSubmissions: 0,
+                numberOfSpamSubmissions: 10,
+                numbersByDate: numbersByDate
+            }
+        })
     });
 
     let statisticResult = await client.getStatisticByDate();
@@ -189,13 +227,16 @@ test('Get statistic by date with range', async () => {
         }
     };
 
-    mock.onGet(host + '/api/v1/statistic/by-date').reply(200, {
-        result: true,
-        data: {
-            numberOfValidSubmissions: 2,
-            numberOfSpamSubmissions: 5,
-            numbersByDate: numbersByDate
-        }
+    fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+            result: true,
+            data: {
+                numberOfValidSubmissions: 2,
+                numberOfSpamSubmissions: 5,
+                numbersByDate: numbersByDate
+            }
+        })
     });
 
     let statisticResult = await client.getStatisticByDate(3600);
@@ -214,13 +255,16 @@ test('Get statistic by date with start date', async () => {
         }
     };
 
-    mock.onGet(host + '/api/v1/statistic/by-date').reply(200, {
-        result: true,
-        data: {
-            numberOfValidSubmissions: 2,
-            numberOfSpamSubmissions: 5,
-            numbersByDate: numbersByDate
-        }
+    fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+            result: true,
+            data: {
+                numberOfValidSubmissions: 2,
+                numberOfSpamSubmissions: 5,
+                numbersByDate: numbersByDate
+            }
+        })
     });
 
     let statisticResult = await client.getStatisticByDate(0, '2024-01-01');
@@ -233,9 +277,12 @@ test('Get statistic by date with start date', async () => {
 test('Get statistic receives error from API', async () => {
     let client = new Client(host, publicKey, privateKey, {});
 
-    mock.onGet(host + '/api/v1/statistic/by-date').reply(200, {
-        error: true,
-        errorMessage: 'Request not valid',
+    fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+            error: true,
+            errorMessage: 'Request not valid',
+        })
     });
 
     await expect(client.getStatisticByDate(3600))
@@ -245,8 +292,8 @@ test('Get statistic receives error from API', async () => {
 test('Get statistic ends in connection error', async () => {
     let client = new Client(host, publicKey, privateKey, {});
 
-    mock.onGet(host + '/api/v1/statistic/by-date').networkError();
+    fetch.mockRejectedValueOnce(new Error('Network Error'));
 
     await expect(client.getStatisticByDate(3600))
-        .rejects.toEqual('Network Error');
+        .rejects.toThrow('Network Error');
 });

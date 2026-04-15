@@ -2,8 +2,6 @@ const RequestHelper = require("./RequestHelper").RequestHelper;
 const VerificationResult = require("./VerificationResult").VerificationResult;
 const StatisticResult = require("./StatisticResult").StatisticResult;
 
-const axios = require('axios');
-
 class Client
 {
     /**
@@ -12,14 +10,13 @@ class Client
      * @param {string} host
      * @param {string} publicKey
      * @param {string} privateKey
-     * @param {Object} clientOptions
+     * @param {Object} clientOptions (deprecated, no longer used)
      */
     constructor(host, publicKey, privateKey, clientOptions)
     {
         this.host = host;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
-        this.clientOptions = clientOptions;
     }
 
     /**
@@ -181,25 +178,46 @@ class Client
      */
     sendRequest(url, options)
     {
-        options = {
-            ...this.clientOptions,
-            ...options
+        const fullUrl = this.host.replace(/\/+$/, '') + url;
+
+        // Build fetch options
+        const fetchOptions = {
+            method: options.method,
+            headers: {
+                ...options.headers,
+                // Convert basic auth to Authorization header
+                'Authorization': 'Basic ' + Buffer.from(
+                    `${options.auth.username}:${options.auth.password}`
+                ).toString('base64')
+            }
         };
-        options.url = this.host.replace(/\/+$/, '') + url;
 
-        return new Promise((resolve, reject) => {
-            axios.request(options).then((response) => {
-                let data = response.data;
-                if (!data || (typeof data.result === 'undefined' && typeof data.valid === 'undefined' && typeof data.error === 'undefined')) {
-                    reject('Response from the API is invalid.');
-                    return;
+        // Add body for POST requests
+        if (options.data) {
+            fetchOptions.body = JSON.stringify(options.data);
+        }
+
+        // Build URL with query params for GET requests
+        const finalUrl = options.params
+            ? `${fullUrl}?${new URLSearchParams(options.params)}`
+            : fullUrl;
+
+        return fetch(finalUrl, fetchOptions)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-
-                resolve(data);
-            }).catch((error) => {
-                reject(error.message);
+                return response.json();
+            })
+            .then(data => {
+                if (!data || (typeof data.result === 'undefined' && typeof data.valid === 'undefined' && typeof data.error === 'undefined')) {
+                    throw new Error('Response from the API is invalid.');
+                }
+                return data;
+            })
+            .catch(error => {
+                throw new Error(error.message);
             });
-        });
     }
 }
 

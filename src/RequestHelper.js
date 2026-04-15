@@ -1,5 +1,4 @@
-const sha256 = require('crypto-js/sha256');
-const hmacSHA256 = require('crypto-js/hmac-sha256');
+const crypto = require('crypto');
 
 class RequestHelper
 {
@@ -23,7 +22,7 @@ class RequestHelper
      */
     createHmacHash(data)
     {
-        return hmacSHA256(data, this.privateKey).toString();
+        return crypto.createHmac('sha256', this.privateKey).update(data).digest('hex');
     }
 
     /**
@@ -55,7 +54,7 @@ class RequestHelper
                     val = val.toString();
                 }
 
-                formData[key] = sha256(val).toString();
+                formData[key] = crypto.createHash('sha256').update(val).digest('hex');
             }
         }
 

@@ -17,6 +17,12 @@
 
 With this JavaScript/TypeScript library you can connect to a mosparo installation and verify the submitted data.
 
+**Zero dependencies** - This library uses only Node.js built-in modules (crypto and fetch).
+
+## Requirements
+
+- Node.js >= 18.0.0 (required for native fetch API support)
+
 ## Installation
 
 Install this library by using npm:
