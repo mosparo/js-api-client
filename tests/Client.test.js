@@ -297,3 +297,314 @@ test('Get statistic ends in connection error', async () => {
     await expect(client.getStatisticByDate(3600))
         .rejects.toThrow('Network Error');
 });
+
+// ============================================================================
+// clientOptions: timeout tests
+// ============================================================================
+
+test('Request times out when timeout is exceeded', async () => {
+    let client = new Client(host, publicKey, privateKey, { timeout: 50 });
+
+    // Mock fetch to simulate a slow response that respects abort signal
+    fetch.mockImplementationOnce((url, options) => {
+        return new Promise((resolve, reject) => {
+            const onAbort = () => {
+                const error = new Error('The operation was aborted.');
+                error.name = 'AbortError';
+                reject(error);
+            };
+            if (options.signal.aborted) {
+                onAbort();
+                return;
+            }
+            options.signal.addEventListener('abort', onAbort);
+        });
+    });
+
+    await expect(client.getStatisticByDate(3600))
+        .rejects.toThrow('Request timeout after 50ms');
+});
+
+test('Successful request clears timeout', async () => {
+    let client = new Client(host, publicKey, privateKey, { timeout: 5000 });
+
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({
+                result: true,
+                data: {
+                    numberOfValidSubmissions: 1,
+                    numberOfSpamSubmissions: 2,
+                    numbersByDate: {}
+                }
+            })
+        });
+    });
+
+    let statisticResult = await client.getStatisticByDate();
+
+    expect(statisticResult.getNumberOfValidSubmissions()).toBe(1);
+    // Verify signal was passed to fetch
+    expect(lastFetchCall.options.signal).toBeInstanceOf(AbortSignal);
+});
+
+test('Invalid timeout value is ignored (negative)', () => {
+    let client = new Client(host, publicKey, privateKey, { timeout: -100 });
+
+    expect(client.clientOptions.timeout).toBeUndefined();
+});
+
+test('Invalid timeout value is ignored (zero)', () => {
+    let client = new Client(host, publicKey, privateKey, { timeout: 0 });
+
+    expect(client.clientOptions.timeout).toBeUndefined();
+});
+
+test('Invalid timeout value is ignored (non-number)', () => {
+    let client = new Client(host, publicKey, privateKey, { timeout: 'not-a-number' });
+
+    expect(client.clientOptions.timeout).toBeUndefined();
+});
+
+// ============================================================================
+// clientOptions: signal tests
+// ============================================================================
+
+test('Request is aborted when external signal is aborted', async () => {
+    const controller = new AbortController();
+    let client = new Client(host, publicKey, privateKey, { signal: controller.signal });
+
+    // Mock fetch to simulate a slow response that respects abort signal
+    fetch.mockImplementationOnce((url, options) => {
+        return new Promise((resolve, reject) => {
+            const onAbort = () => {
+                const error = new Error('The operation was aborted.');
+                error.name = 'AbortError';
+                reject(error);
+            };
+            if (options.signal.aborted) {
+                onAbort();
+                return;
+            }
+            options.signal.addEventListener('abort', onAbort);
+        });
+    });
+
+    // Abort after a short delay
+    setTimeout(() => controller.abort(), 10);
+
+    await expect(client.getStatisticByDate(3600))
+        .rejects.toThrow('The operation was aborted.');
+});
+
+test('Request is aborted immediately when signal is already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    let client = new Client(host, publicKey, privateKey, { signal: controller.signal });
+
+    fetch.mockImplementationOnce((url, options) => {
+        return new Promise((resolve, reject) => {
+            if (options.signal.aborted) {
+                const error = new Error('The operation was aborted.');
+                error.name = 'AbortError';
+                reject(error);
+                return;
+            }
+            // Should not reach here
+            resolve({ ok: true, json: async () => ({ valid: true }) });
+        });
+    });
+
+    await expect(client.getStatisticByDate(3600))
+        .rejects.toThrow('The operation was aborted.');
+});
+
+test('Invalid signal throws error', () => {
+    expect(() => {
+        new Client(host, publicKey, privateKey, { signal: 'not-a-signal' });
+    }).toThrow('clientOptions.signal must be an instance of AbortSignal.');
+});
+
+test('Invalid signal object throws error', () => {
+    expect(() => {
+        new Client(host, publicKey, privateKey, { signal: { aborted: false } });
+    }).toThrow('clientOptions.signal must be an instance of AbortSignal.');
+});
+
+// ============================================================================
+// clientOptions: headers tests
+// ============================================================================
+
+test('Custom headers are included in requests', async () => {
+    let client = new Client(host, publicKey, privateKey, {
+        headers: {
+            'X-Custom-Header': 'custom-value',
+            'X-API-Version': '2.0'
+        }
+    });
+
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({
+                result: true,
+                data: {
+                    numberOfValidSubmissions: 0,
+                    numberOfSpamSubmissions: 0,
+                    numbersByDate: {}
+                }
+            })
+        });
+    });
+
+    await client.getStatisticByDate();
+
+    expect(lastFetchCall.options.headers['X-Custom-Header']).toBe('custom-value');
+    expect(lastFetchCall.options.headers['X-API-Version']).toBe('2.0');
+    // Standard headers should still be present
+    expect(lastFetchCall.options.headers['Accept']).toBe('application/json');
+});
+
+test('Custom headers merge with method headers', async () => {
+    let client = new Client(host, publicKey, privateKey, {
+        headers: {
+            'X-Custom-Header': 'custom-value'
+        }
+    });
+
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({ valid: true, verificationSignature: 'sig', verifiedFields: {}, issues: {} })
+        });
+    });
+
+    await client.verifySubmission({ name: 'Test' }, 'submitToken', 'validationToken');
+
+    expect(lastFetchCall.options.headers['X-Custom-Header']).toBe('custom-value');
+    expect(lastFetchCall.options.headers['Accept']).toBe('application/json');
+    expect(lastFetchCall.options.headers['Content-Type']).toBe('application/json');
+});
+
+test('Authorization header cannot be overridden by custom headers', async () => {
+    let client = new Client(host, publicKey, privateKey, {
+        headers: {
+            'Authorization': 'Bearer malicious-token'
+        }
+    });
+
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({
+                result: true,
+                data: {
+                    numberOfValidSubmissions: 0,
+                    numberOfSpamSubmissions: 0,
+                    numbersByDate: {}
+                }
+            })
+        });
+    });
+
+    await client.getStatisticByDate();
+
+    // Authorization should be set by the client, not overridden
+    expect(lastFetchCall.options.headers['Authorization']).toMatch(/^Basic /);
+    expect(lastFetchCall.options.headers['Authorization']).not.toBe('Bearer malicious-token');
+});
+
+test('Invalid headers (non-object) are logged and ignored', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    let client = new Client(host, publicKey, privateKey, { headers: 'not-an-object' });
+
+    expect(client.clientOptions.headers).toEqual({});
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'clientOptions.headers must be a plain object. Ignoring invalid value.'
+    );
+
+    consoleWarnSpy.mockRestore();
+});
+
+test('Invalid headers (array) are logged and ignored', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    let client = new Client(host, publicKey, privateKey, { headers: ['header1', 'header2'] });
+
+    expect(client.clientOptions.headers).toEqual({});
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'clientOptions.headers must be a plain object. Ignoring invalid value.'
+    );
+
+    consoleWarnSpy.mockRestore();
+});
+
+test('Invalid headers (null) are logged and ignored', () => {
+    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    let client = new Client(host, publicKey, privateKey, { headers: null });
+
+    expect(client.clientOptions.headers).toEqual({});
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'clientOptions.headers must be a plain object. Ignoring invalid value.'
+    );
+
+    consoleWarnSpy.mockRestore();
+});
+
+// ============================================================================
+// clientOptions: general tests
+// ============================================================================
+
+test('Client works without clientOptions argument', () => {
+    let client = new Client(host, publicKey, privateKey);
+
+    expect(client.clientOptions.timeout).toBeUndefined();
+    expect(client.clientOptions.signal).toBeUndefined();
+    expect(client.clientOptions.headers).toEqual({});
+});
+
+test('Client works with null clientOptions', () => {
+    let client = new Client(host, publicKey, privateKey, null);
+
+    expect(client.clientOptions.timeout).toBeUndefined();
+    expect(client.clientOptions.signal).toBeUndefined();
+    expect(client.clientOptions.headers).toEqual({});
+});
+
+test('Client works with all clientOptions combined', async () => {
+    const controller = new AbortController();
+    let client = new Client(host, publicKey, privateKey, {
+        timeout: 5000,
+        signal: controller.signal,
+        headers: { 'X-Custom': 'value' }
+    });
+
+    fetch.mockImplementationOnce((url, options) => {
+        lastFetchCall = { url, options };
+        return Promise.resolve({
+            ok: true,
+            json: async () => ({
+                result: true,
+                data: {
+                    numberOfValidSubmissions: 5,
+                    numberOfSpamSubmissions: 3,
+                    numbersByDate: {}
+                }
+            })
+        });
+    });
+
+    let statisticResult = await client.getStatisticByDate();
+
+    expect(statisticResult.getNumberOfValidSubmissions()).toBe(5);
+    expect(lastFetchCall.options.headers['X-Custom']).toBe('value');
+    expect(lastFetchCall.options.signal).toBeInstanceOf(AbortSignal);
+});

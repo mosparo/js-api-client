@@ -5,12 +5,24 @@ export class Client {
      * @param {string} host
      * @param {string} publicKey
      * @param {string} privateKey
-     * @param {Object} clientOptions (deprecated, no longer used)
+     * @param {Object} [clientOptions] Optional client configuration
+     * @param {number} [clientOptions.timeout] Request timeout in milliseconds
+     * @param {AbortSignal} [clientOptions.signal] AbortSignal for request cancellation
+     * @param {Object} [clientOptions.headers] Additional headers to include in all requests
      */
-    constructor(host: string, publicKey: string, privateKey: string, clientOptions: Object);
+    constructor(host: string, publicKey: string, privateKey: string, clientOptions?: {
+        timeout?: number | undefined;
+        signal?: AbortSignal | undefined;
+        headers?: Object | undefined;
+    });
     host: string;
     publicKey: string;
     privateKey: string;
+    clientOptions: {
+        timeout: number | undefined;
+        signal: AbortSignal | undefined;
+        headers: {};
+    };
     /**
      * Verifies the submission
      *

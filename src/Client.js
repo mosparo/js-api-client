@@ -10,13 +10,41 @@ class Client
      * @param {string} host
      * @param {string} publicKey
      * @param {string} privateKey
-     * @param {Object} clientOptions (deprecated, no longer used)
+     * @param {Object} [clientOptions] Optional client configuration
+     * @param {number} [clientOptions.timeout] Request timeout in milliseconds
+     * @param {AbortSignal} [clientOptions.signal] AbortSignal for request cancellation
+     * @param {Object} [clientOptions.headers] Additional headers to include in all requests
      */
     constructor(host, publicKey, privateKey, clientOptions)
     {
         this.host = host;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
+
+        // Normalize clientOptions to an object
+        const opts = (typeof clientOptions === 'object' && clientOptions !== null) ? clientOptions : {};
+
+        // Validate signal: throw error if provided but not an AbortSignal
+        if (typeof opts.signal !== 'undefined' && !(opts.signal instanceof AbortSignal)) {
+            throw new Error('clientOptions.signal must be an instance of AbortSignal.');
+        }
+
+        // Validate headers: log warning and ignore if invalid
+        let headers = {};
+        if (typeof opts.headers !== 'undefined') {
+            if (typeof opts.headers === 'object' && opts.headers !== null && !Array.isArray(opts.headers)) {
+                headers = { ...opts.headers };
+            } else {
+                console.warn('clientOptions.headers must be a plain object. Ignoring invalid value.');
+            }
+        }
+
+        // Store validated client options
+        this.clientOptions = {
+            timeout: (typeof opts.timeout === 'number' && opts.timeout > 0) ? opts.timeout : undefined,
+            signal: opts.signal,
+            headers: headers,
+        };
     }
 
     /**
@@ -180,12 +208,39 @@ class Client
     {
         const fullUrl = this.host.replace(/\/+$/, '') + url;
 
-        // Build fetch options
+        // Setup AbortController for timeout and signal handling
+        const controller = new AbortController();
+        let timeoutId = null;
+        let timedOut = false;
+
+        // Link external signal if provided
+        if (this.clientOptions.signal) {
+            if (this.clientOptions.signal.aborted) {
+                controller.abort();
+            } else {
+                this.clientOptions.signal.addEventListener('abort', () => {
+                    controller.abort();
+                });
+            }
+        }
+
+        // Setup timeout if specified
+        if (this.clientOptions.timeout) {
+            timeoutId = setTimeout(() => {
+                timedOut = true;
+                controller.abort();
+            }, this.clientOptions.timeout);
+        }
+
+        // Build fetch options with merged headers
+        // Order: clientOptions.headers -> method headers -> Authorization (always wins)
         const fetchOptions = {
             method: options.method,
+            signal: controller.signal,
             headers: {
+                ...this.clientOptions.headers,
                 ...options.headers,
-                // Convert basic auth to Authorization header
+                // Convert basic auth to Authorization header (cannot be overridden)
                 'Authorization': 'Basic ' + Buffer.from(
                     `${options.auth.username}:${options.auth.password}`
                 ).toString('base64')
@@ -202,8 +257,16 @@ class Client
             ? `${fullUrl}?${new URLSearchParams(options.params)}`
             : fullUrl;
 
+        const cleanup = () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+        };
+
         return fetch(finalUrl, fetchOptions)
             .then(response => {
+                cleanup();
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -216,6 +279,13 @@ class Client
                 return data;
             })
             .catch(error => {
+                cleanup();
+
+                // Provide specific error message for timeout
+                if (timedOut) {
+                    throw new Error(`Request timeout after ${this.clientOptions.timeout}ms`);
+                }
+
                 throw new Error(error.message);
             });
     }
