@@ -6,10 +6,10 @@ export class StatisticResult {
      * @param {int} numberOfSpamSubmissions
      * @param {Object} numbersByDate
      */
-    constructor(numberOfValidSubmissions: int, numberOfSpamSubmissions: int, numbersByDate: any);
+    constructor(numberOfValidSubmissions: int, numberOfSpamSubmissions: int, numbersByDate: Object);
     numberOfValidSubmissions: int;
     numberOfSpamSubmissions: int;
-    numbersByDate: any;
+    numbersByDate: Object;
     /**
      * Returns the total number of valid submissions
      *
@@ -27,6 +27,6 @@ export class StatisticResult {
      *
      * @returns {Object}
      */
-    getNumbersByDate(): any;
+    getNumbersByDate(): Object;
 }
 //# sourceMappingURL=StatisticResult.d.ts.map

@@ -17,6 +17,12 @@
 
 With this JavaScript/TypeScript library you can connect to a mosparo installation and verify the submitted data.
 
+**Zero dependencies** - This library uses only Node.js built-in modules (crypto and fetch).
+
+## Requirements
+
+- Node.js >= 18.0.0 (required for native fetch API support)
+
 ## Installation
 
 Install this library by using npm:
@@ -84,10 +90,61 @@ Create a new client object to use the API client.
  * @param string url URL of the mosparo installation
  * @param string publicKey Public key of the mosparo project
  * @param string privateKey Private key of the mosparo project
- * @param array args Arguments for the axios request
+ * @param object clientOptions Optional client configuration (see Client Options below)
  */
-let client = new Client(url, publicKey, privateKey, args);
+let client = new Client(url, publicKey, privateKey, clientOptions);
 ```
+
+#### Client Options
+
+The client accepts an optional configuration object with the following properties:
+
+| Option    | Type          | Description                                            |
+| --------- | ------------- | ------------------------------------------------------ |
+| `timeout` | `number`      | Request timeout in milliseconds (optional)             |
+| `signal`  | `AbortSignal` | AbortSignal for request cancellation (optional)        |
+| `headers` | `object`      | Additional headers to include in all requests (optional) |
+
+##### Timeout
+
+Set a timeout (in milliseconds) for all requests. If a request takes longer than the specified timeout, it will be aborted with a timeout error.
+
+```js
+const client = new Client(url, publicKey, privateKey, {
+    timeout: 30000  // 30 second timeout
+});
+```
+
+**Note:** By default, there is no timeout set. This matches the behavior of the native `fetch` API, where `undefined` means no timeout and requests can hang indefinitely if the server does not respond. It is recommended to set a timeout for production use to prevent hanging requests.
+
+##### Request Cancellation
+
+Cancel pending requests using an AbortController:
+
+```js
+const controller = new AbortController();
+const client = new Client(url, publicKey, privateKey, {
+    signal: controller.signal
+});
+
+// Later, cancel all pending requests
+controller.abort();
+```
+
+##### Custom Headers
+
+Add custom headers to all requests:
+
+```js
+const client = new Client(url, publicKey, privateKey, {
+    headers: {
+        'X-API-Version': '2.0',
+        'X-Client-ID': 'my-app'
+    }
+});
+```
+
+**Note:** The `Authorization` header is automatically set by the client and cannot be overridden.
 
 #### Verify form data
 

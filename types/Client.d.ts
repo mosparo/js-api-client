@@ -5,13 +5,24 @@ export class Client {
      * @param {string} host
      * @param {string} publicKey
      * @param {string} privateKey
-     * @param {Object} clientOptions
+     * @param {Object} [clientOptions] Optional client configuration
+     * @param {number} [clientOptions.timeout] Request timeout in milliseconds
+     * @param {AbortSignal} [clientOptions.signal] AbortSignal for request cancellation
+     * @param {Object} [clientOptions.headers] Additional headers to include in all requests
      */
-    constructor(host: string, publicKey: string, privateKey: string, clientOptions: any);
+    constructor(host: string, publicKey: string, privateKey: string, clientOptions?: {
+        timeout?: number | undefined;
+        signal?: AbortSignal | undefined;
+        headers?: Object | undefined;
+    });
     host: string;
     publicKey: string;
     privateKey: string;
-    clientOptions: any;
+    clientOptions: {
+        timeout: number | undefined;
+        signal: AbortSignal | undefined;
+        headers: {};
+    };
     /**
      * Verifies the submission
      *
@@ -20,7 +31,7 @@ export class Client {
      * @param {string} validationToken
      * @returns {Promise}
      */
-    verifySubmission(formData: any, submitToken: string, validationToken: string): Promise<any>;
+    verifySubmission(formData: Object, submitToken: string, validationToken: string): Promise<any>;
     /**
      * Verifies the submission
      *
@@ -31,7 +42,7 @@ export class Client {
      *
      * @deprecated 1.0.0 Use verifySubmission() instead since the process is to verify the data, not to validate
      */
-    validateSubmission(formData: any, submitToken: string, validationToken: string): Promise<any>;
+    validateSubmission(formData: Object, submitToken: string, validationToken: string): Promise<any>;
     /**
      * Returns the statistic grouped by date for the given range in days
      *
@@ -47,6 +58,6 @@ export class Client {
      * @param {Object} options
      * @returns {Promise}
      */
-    sendRequest(url: string, options: any): Promise<any>;
+    sendRequest(url: string, options: Object): Promise<any>;
 }
 //# sourceMappingURL=Client.d.ts.map

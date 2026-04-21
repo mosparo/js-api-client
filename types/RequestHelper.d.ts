@@ -21,34 +21,34 @@ export class RequestHelper {
      * @param {Object} formData
      * @returns {Object}
      */
-    prepareFormData(formData: any): any;
+    prepareFormData(formData: Object): Object;
     /**
      * Cleanup the form data
      *
      * @param {Object} formData
      * @returns {Object}
      */
-    cleanupFormData(formData: any): any;
+    cleanupFormData(formData: Object): Object;
     /**
      * Creates the HMAC hash for the given form data
      *
      * @param {Object} formData
      * @returns {string}
      */
-    createFormDataHmacHash(formData: any): string;
+    createFormDataHmacHash(formData: Object): string;
     /**
      * Converts the given object into a JSON string
      *
      * @param {Object} inData
      * @returns {string}
      */
-    toJson(inData: any): string;
+    toJson(inData: Object): string;
     /**
      * Sorts the given form data by key
      *
      * @param {Object} formData
      * @returns {Object}
      */
-    sortFormData(formData: any): any;
+    sortFormData(formData: Object): Object;
 }
 //# sourceMappingURL=RequestHelper.d.ts.map
